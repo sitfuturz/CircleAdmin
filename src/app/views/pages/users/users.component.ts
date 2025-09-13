@@ -67,14 +67,14 @@ export class UsersComponent implements OnInit, AfterViewInit {
     name: '',
     mobile_number: '',
     email: '',
-    
+    role: '',
     meeting_role: ''
   };
   editError = {
     name: '',
     mobile_number: '',
     email: '',
-   
+    role: '',
     meeting_role: ''
   };
   editLoading: boolean = false;
@@ -385,15 +385,14 @@ export class UsersComponent implements OnInit, AfterViewInit {
 
   editUser(user: any): void {
     this.selectedUser = user;
-    // Initialize edit form with user data
     this.editForm = {
       name: user.name || '',
       mobile_number: user.mobile_number || '',
       email: user.email || '',
-      //date_of_birth: user.date_of_birth ? new Date(user.date_of_birth).toISOString().split('T')[0] : '',
-      meeting_role: user.meeting_role || ''
+      meeting_role: user.meeting_role || '',
+      role: user.role || 'Member' // Initialize with current role or default
     };
-    this.editError = { name: '', mobile_number: '', email: '',  meeting_role: '' };
+    this.editError = { name: '', mobile_number: '', email: '', meeting_role: '', role: '' };
 
     if (this.editUserModal) {
       this.editUserModal.show();
@@ -424,7 +423,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
 
   validateEditForm(): boolean {
     let isValid = true;
-    this.editError = { name: '', mobile_number: '', email: '', meeting_role: '' };
+    this.editError = { name: '', mobile_number: '', email: '', meeting_role: '', role: '' };
 
     if (!this.editForm.name.trim()) {
       this.editError.name = 'Name is required';
@@ -444,18 +443,17 @@ export class UsersComponent implements OnInit, AfterViewInit {
       this.editError.email = 'Invalid email format';
       isValid = false;
     }
-    // if (!this.editForm.date_of_birth) {
-    //   this.editError.date_of_birth = 'Date of birth is required';
-    //   isValid = false;
-    // }
     if (!this.editForm.meeting_role) {
       this.editError.meeting_role = 'Meeting role is required';
+      isValid = false;
+    }
+    if (!this.editForm.role) {
+      this.editError.role = 'Role is required';
       isValid = false;
     }
 
     return isValid;
   }
-
   async updateUser(): Promise<void> {
     if (!this.validateEditForm()) {
       return;

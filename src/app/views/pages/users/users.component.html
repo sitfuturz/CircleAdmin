@@ -696,6 +696,13 @@
             </ng-select>
             <div *ngIf="editError.meeting_role" class="text-danger small mt-1">{{editError.meeting_role}}</div>
           </div>
+          <div class="mb-3">
+            <label for="editRole" class="form-label">Role <span class="text-danger">*</span></label>
+            <ng-select id="editRole"
+              [items]="['superadmin', 'advisoryBoard', 'supportDirector', 'SupportAmbassador', 'LT', 'Member']"
+              [(ngModel)]="editForm.role" name="role" placeholder="Select role" required>
+            </ng-select>
+            <div *ngIf="editError.role" class="text-danger small mt-1">{{editError.role}}</div>    </div>
         </form>
       </div>
       <div class="modal-footer">
