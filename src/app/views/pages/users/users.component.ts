@@ -98,6 +98,36 @@ export class UsersComponent implements OnInit, AfterViewInit {
     limit: 5
   };
 
+  emailModal: any;
+  whatsappModal: any;
+  emailLoading: boolean = false;
+  whatsappLoading: boolean = false;
+
+  emailForm = {
+    userId: '',
+    subject: '',
+    message: '',
+    attachment: null
+  };
+
+  emailError = {
+    subject: '',
+    message: ''
+  };
+
+  whatsappForm = {
+    userId: '',
+    message: '',
+    includeLink: false,
+    link: ''
+  };
+
+  whatsappError = {
+    message: ''
+  };
+
+
+
   private searchSubject = new Subject<string>();
 
   constructor(
@@ -139,6 +169,18 @@ export class UsersComponent implements OnInit, AfterViewInit {
         console.warn('Notification modal element not found in the DOM');
       }
     }, 300);
+
+    const emailModalElement = document.getElementById('emailModal');
+    if (emailModalElement) {
+      this.emailModal = new bootstrap.Modal(emailModalElement);
+    }
+
+    const whatsappModalElement = document.getElementById('whatsappModal');
+    if (whatsappModalElement) {
+      this.whatsappModal = new bootstrap.Modal(whatsappModalElement);
+    }
+
+
   }
 
   async fetchChapters(): Promise<void> {
@@ -305,6 +347,147 @@ export class UsersComponent implements OnInit, AfterViewInit {
       }
     }
   }
+
+  // Email Modal Methods
+  openEmailModal(user: any): void {
+    this.selectedUser = user;
+    this.emailForm = {
+      userId: user._id,
+      subject: '',
+      message: '',
+      attachment: null
+    };
+    this.emailError = {
+      subject: '',
+      message: ''
+    };
+
+    if (this.emailModal) {
+      this.emailModal.show();
+    } else {
+      $('#emailModal').modal('show');
+    }
+  }
+
+  closeEmailModal(): void {
+    if (this.emailModal) {
+      this.emailModal.hide();
+    } else {
+      $('#emailModal').modal('hide');
+    }
+  }
+
+  validateEmailForm(): boolean {
+    let isValid = true;
+    this.emailError = { subject: '', message: '' };
+
+    if (!this.emailForm.subject.trim()) {
+      this.emailError.subject = 'Subject is required';
+      isValid = false;
+    }
+    if (!this.emailForm.message.trim()) {
+      this.emailError.message = 'Message is required';
+      isValid = false;
+    }
+    return isValid;
+  }
+
+  async sendEmail(): Promise<void> {
+    if (!this.validateEmailForm()) {
+      return;
+    }
+
+    this.emailLoading = true;
+    try {
+      // Add your email API call here
+      console.log('Sending email to:', this.selectedUser.email);
+      console.log('Email data:', this.emailForm);
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Show success message
+      console.log('Email sent successfully');
+      this.closeEmailModal();
+    } catch (error) {
+      console.error('Error sending email:', error);
+    } finally {
+      this.emailLoading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  onFileSelect(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.emailForm.attachment = file;
+    }
+  }
+
+  // WhatsApp Modal Methods
+  openWhatsAppModal(user: any): void {
+    this.selectedUser = user;
+    this.whatsappForm = {
+      userId: user._id,
+      message: '',
+      includeLink: false,
+      link: ''
+    };
+    this.whatsappError = {
+      message: ''
+    };
+
+    if (this.whatsappModal) {
+      this.whatsappModal.show();
+    } else {
+      $('#whatsappModal').modal('show');
+    }
+  }
+
+  closeWhatsAppModal(): void {
+    if (this.whatsappModal) {
+      this.whatsappModal.hide();
+    } else {
+      $('#whatsappModal').modal('hide');
+    }
+  }
+
+  validateWhatsAppForm(): boolean {
+    let isValid = true;
+    this.whatsappError = { message: '' };
+
+    if (!this.whatsappForm.message.trim()) {
+      this.whatsappError.message = 'Message is required';
+      isValid = false;
+    }
+    return isValid;
+  }
+
+  async sendWhatsApp(): Promise<void> {
+    if (!this.validateWhatsAppForm()) {
+      return;
+    }
+
+    this.whatsappLoading = true;
+    try {
+      // Add your WhatsApp API call here
+      console.log('Sending WhatsApp to:', this.selectedUser.mobile_number);
+      console.log('WhatsApp data:', this.whatsappForm);
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Show success message
+      console.log('WhatsApp sent successfully');
+      this.closeWhatsAppModal();
+    } catch (error) {
+      console.error('Error sending WhatsApp:', error);
+    } finally {
+      this.whatsappLoading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
 
   openNotificationModal(user: any): void {
     this.selectedUser = user;
