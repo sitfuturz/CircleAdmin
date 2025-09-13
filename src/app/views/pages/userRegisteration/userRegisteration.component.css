@@ -1,4 +1,4 @@
-/* register.component.css */
+/* userRegisteration.component.css */
 .bg-gradient-primary {
   background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
   color: white;
@@ -217,15 +217,15 @@ h5 {
     width: 150px;
     height: 150px;
   }
-  
+
   .modal-dialog {
     margin: 0.5rem;
   }
-  
+
   .modal-body {
     padding: 1rem;
   }
-  
+
   .form-control,
   ::ng-deep .ng-select .ng-select-container {
     font-size: 0.85rem;

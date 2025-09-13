@@ -7,6 +7,7 @@ import { CountryService, Country } from '../../../services/auth.service';
 import { StateService, State } from '../../../services/auth.service';
 import { CityService, City } from '../../../services/auth.service';
 import { ChapterService, Chapter } from '../../../services/auth.service';
+import { CategoryService, CategoryResponse, Category } from '../../../services/auth.service';
 import { AuthService } from '../../../services/auth.service';
 import { DashboardService } from '../../../services/auth.service';
 import { swalHelper } from '../../../core/constants/swal-helper';
@@ -19,9 +20,9 @@ declare var bootstrap: any;
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, FormsModule, NgSelectModule],
-  providers: [RegisterUserAuthService, CountryService, StateService, CityService, ChapterService, AuthService, DashboardService],
+  providers: [RegisterUserAuthService, CategoryService, CountryService, StateService, CityService, ChapterService, AuthService, DashboardService],
   templateUrl: './userRegisteration.component.html',
-  styleUrls: ['./userRegisteration.component.css']
+  styleUrls: ['./userRegisteration.component.css'],
 })
 export class RegisterComponent implements OnInit, AfterViewInit {
   registerForm: any = {
@@ -37,7 +38,8 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     country: '',
     sponseredBy: '',
     keywords: '',
-    induction_date: ''
+    induction_date: '',
+    category: '',
   };
 
   countries: Country[] = [];
@@ -45,21 +47,23 @@ export class RegisterComponent implements OnInit, AfterViewInit {
   cities: City[] = [];
   chapters: Chapter[] = [];
   users: User[] = [];
-  
+  categories: Category[] = [];
+
   loading: boolean = false;
   countriesLoading: boolean = false;
   statesLoading: boolean = false;
   citiesLoading: boolean = false;
   chaptersLoading: boolean = false;
   usersLoading: boolean = false;
-  
+  categoriesLoading: boolean = false;
+
   countriesLoaded: boolean = false;
   statesLoaded: boolean = false;
   citiesLoaded: boolean = false;
   chaptersLoaded: boolean = false;
   usersLoaded: boolean = false;
+  categoriesLoaded: boolean = false;
 
-  // Track which fields have been touched/interacted with
   touchedFields: any = {
     name: false,
     email: false,
@@ -68,10 +72,11 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     state: false,
     city: false,
     chapter_name: false,
-    induction_date: false
+    induction_date: false,
+    meeting_role: false,
+    category: false,
   };
 
-  // Validation error messages
   validationErrors: any = {
     name: '',
     email: '',
@@ -80,13 +85,14 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     state: '',
     city: '',
     chapter_name: '',
-    induction_date: ''
+    induction_date: '',
+    meeting_role: '',
+    category: '',
   };
 
-  // Add meetingRoles array to fix the error
   meetingRoles = [
     { name: 'Leader', value: 'Leader' },
-    { name: 'Member', value: 'Member' }
+    { name: 'Member', value: 'Member' },
   ];
 
   private searchSubject = new Subject<string>();
@@ -94,6 +100,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
 
   constructor(
     private registerService: RegisterUserAuthService,
+    private categoryService: CategoryService,
     private countryService: CountryService,
     private stateService: StateService,
     private cityService: CityService,
@@ -112,6 +119,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     this.fetchStates();
     this.fetchCities();
     this.fetchUsers();
+    this.fetchCategories();
   }
 
   ngAfterViewInit(): void {
@@ -123,6 +131,22 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     }, 300);
   }
 
+  async fetchCategories(): Promise<void> {
+    this.categoriesLoading = true;
+    this.categoriesLoaded = false;
+    try {
+      const response = await this.categoryService.getCategories({ page: 1, limit: 1000, search: '' });
+      this.categories = response.docs;
+      this.categoriesLoaded = true;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      swalHelper.showToast('Failed to fetch categories', 'error');
+    } finally {
+      this.categoriesLoading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
   async fetchCountries(): Promise<void> {
     this.countriesLoading = true;
     this.countriesLoaded = false;
@@ -130,7 +154,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       const response = await this.countryService.getAllCountries({
         page: 1,
         limit: 1000,
-        search: ''
+        search: '',
       });
       this.countries = response.docs;
       this.countriesLoaded = true;
@@ -150,7 +174,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       const response = await this.stateService.getAllStates({
         page: 1,
         limit: 1000,
-        search: ''
+        search: '',
       });
       this.states = response.docs;
       this.statesLoaded = true;
@@ -170,7 +194,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       const response = await this.cityService.getAllCities({
         page: 1,
         limit: 1000,
-        search: ''
+        search: '',
       });
       this.cities = response.docs;
       this.citiesLoaded = true;
@@ -193,7 +217,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     this.chaptersLoaded = false;
     try {
       const response = await this.dashboardService.getChaptersByCity(cityName);
-      this.chapters = response.data || response.data || [];
+      this.chapters = response.data || response || [];
       this.chaptersLoaded = true;
     } catch (error) {
       console.error('Error fetching chapters by city:', error);
@@ -212,7 +236,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       const response = await this.authService.getUsers({
         page: 1,
         limit: 1000,
-        search: ''
+        search: '',
       });
       this.users = response.docs;
       this.usersLoaded = true;
@@ -228,8 +252,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
   onCityChange(): void {
     this.registerForm.chapter_name = '';
     this.validationErrors.chapter_name = '';
-    this.touchedFields.chapter_name = false; // Reset touched state for chapter
-    
+    this.touchedFields.chapter_name = false;
     if (this.registerForm.city) {
       this.fetchChaptersByCity(this.registerForm.city);
     } else {
@@ -240,15 +263,11 @@ export class RegisterComponent implements OnInit, AfterViewInit {
   onMobileInput(event: any): void {
     const input = event.target;
     let value = input.value.replace(/\D/g, '');
-    
     if (value.length > 10) {
       value = value.substring(0, 10);
     }
-    
     this.registerForm.mobile_number = value;
     input.value = value;
-    
-    // Mark as touched and validate
     this.touchedFields.mobile_number = true;
     if (value.length === 10) {
       this.validationErrors.mobile_number = '';
@@ -259,9 +278,8 @@ export class RegisterComponent implements OnInit, AfterViewInit {
 
   validateName(): boolean {
     if (!this.touchedFields.name) {
-      return true; // Don't validate untouched fields
+      return true;
     }
-
     const name = this.registerForm.name.trim();
     if (!name) {
       this.validationErrors.name = 'Full name is required';
@@ -283,7 +301,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     if (!this.touchedFields.email) {
       return true;
     }
-
     const email = this.registerForm.email.trim();
     if (!email) {
       this.validationErrors.email = 'Email is required';
@@ -302,7 +319,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     if (!this.touchedFields.mobile_number) {
       return true;
     }
-
     const mobile = this.registerForm.mobile_number;
     if (!mobile) {
       this.validationErrors.mobile_number = 'Mobile number is required';
@@ -320,7 +336,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     if (!this.touchedFields.country) {
       return true;
     }
-
     if (!this.registerForm.country) {
       this.validationErrors.country = 'Country is required';
       return false;
@@ -333,7 +348,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     if (!this.touchedFields.state) {
       return true;
     }
-
     if (!this.registerForm.state) {
       this.validationErrors.state = 'State is required';
       return false;
@@ -346,7 +360,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     if (!this.touchedFields.city) {
       return true;
     }
-
     if (!this.registerForm.city) {
       this.validationErrors.city = 'City is required';
       return false;
@@ -359,7 +372,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     if (!this.touchedFields.chapter_name) {
       return true;
     }
-
     if (!this.registerForm.chapter_name) {
       this.validationErrors.chapter_name = 'Chapter is required';
       return false;
@@ -372,26 +384,47 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     if (!this.touchedFields.induction_date) {
       return true;
     }
-
     const induction_date = this.registerForm.induction_date;
     if (!induction_date) {
       this.validationErrors.induction_date = 'Induction date is required';
       return false;
     }
-
     const selectedDate = new Date(induction_date);
-   
-    
-
+    const today = new Date();
+    if (selectedDate > today) {
+      this.validationErrors.induction_date = 'Induction date cannot be in the future';
+      return false;
+    }
     this.validationErrors.induction_date = '';
     return true;
   }
 
+  validateCategory(): boolean {
+    if (!this.touchedFields.category) {
+      return true;
+    }
+    if (!this.registerForm.category) {
+      this.validationErrors.category = 'Category is required';
+      return false;
+    }
+    this.validationErrors.category = '';
+    return true;
+  }
+
+  validateMeetingRole(): boolean {
+    if (!this.touchedFields.meeting_role) {
+      return true;
+    }
+    if (!this.registerForm.meeting_role) {
+      this.validationErrors.meeting_role = 'Meeting role is required';
+      return false;
+    }
+    this.validationErrors.meeting_role = '';
+    return true;
+  }
+
   onFieldBlur(fieldName: string): void {
-    // Mark field as touched
     this.touchedFields[fieldName] = true;
-    
-    // Then validate
     switch (fieldName) {
       case 'name':
         this.validateName();
@@ -417,10 +450,14 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       case 'induction_date':
         this.validateInductionDate();
         break;
+      case 'category':
+        this.validateCategory();
+        break;
+      case 'meeting_role':
+        this.validateMeetingRole();
+        break;
     }
   }
-
-
 
   onFileChange(event: any): void {
     const file = event.target.files[0];
@@ -431,9 +468,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
 
   async registerUser(): Promise<void> {
     try {
-      // Mark all required fields as touched before final validation
       this.markAllRequiredFieldsAsTouched();
-      
       if (!this.validateFormForSubmission()) {
         swalHelper.showToast('Please fix all validation errors', 'warning');
         return;
@@ -441,23 +476,18 @@ export class RegisterComponent implements OnInit, AfterViewInit {
 
       this.loading = true;
       const formData = new FormData();
-      
-      Object.keys(this.registerForm).forEach(key => {
+      Object.keys(this.registerForm).forEach((key) => {
         if (key === 'profilePic' && this.registerForm[key]) {
           formData.append(key, this.registerForm[key]);
         } else if (key === 'induction_date' && this.registerForm[key]) {
-          // Explicitly format induction_date to YYYY-MM-DD
           const formattedDate = new Date(this.registerForm[key]).toISOString().split('T')[0];
           formData.append(key, formattedDate);
         } else {
-          // Append all other fields, including empty ones
           formData.append(key, this.registerForm[key] || '');
         }
       });
 
       const response = await this.registerService.registerUser(formData);
-      console.log('Register response:', response);
-      
       if (response && response.success) {
         swalHelper.showToast('User registered successfully', 'success');
         this.closeModal();
@@ -470,6 +500,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       swalHelper.showToast('Failed to register user', 'error');
     } finally {
       this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 
@@ -482,6 +513,8 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     this.touchedFields.city = true;
     this.touchedFields.chapter_name = true;
     this.touchedFields.induction_date = true;
+    this.touchedFields.category = true;
+    this.touchedFields.meeting_role = true;
   }
 
   validateFormForSubmission(): boolean {
@@ -489,10 +522,9 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     const email = this.registerForm.email.trim();
     const mobile = this.registerForm.mobile_number;
     const induction_date = this.registerForm.induction_date;
-    
+
     let isValid = true;
 
-    // Validate name
     if (!name) {
       this.validationErrors.name = 'Full name is required';
       isValid = false;
@@ -506,7 +538,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       this.validationErrors.name = '';
     }
 
-    // Validate email
     if (!email) {
       this.validationErrors.email = 'Email is required';
       isValid = false;
@@ -517,7 +548,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       this.validationErrors.email = '';
     }
 
-    // Validate mobile
     if (!mobile) {
       this.validationErrors.mobile_number = 'Mobile number is required';
       isValid = false;
@@ -528,7 +558,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       this.validationErrors.mobile_number = '';
     }
 
-    // Validate country
     if (!this.registerForm.country) {
       this.validationErrors.country = 'Country is required';
       isValid = false;
@@ -536,7 +565,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       this.validationErrors.country = '';
     }
 
-    // Validate state
     if (!this.registerForm.state) {
       this.validationErrors.state = 'State is required';
       isValid = false;
@@ -544,7 +572,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       this.validationErrors.state = '';
     }
 
-    // Validate city
     if (!this.registerForm.city) {
       this.validationErrors.city = 'City is required';
       isValid = false;
@@ -552,7 +579,6 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       this.validationErrors.city = '';
     }
 
-    // Validate chapter
     if (!this.registerForm.chapter_name) {
       this.validationErrors.chapter_name = 'Chapter is required';
       isValid = false;
@@ -560,7 +586,20 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       this.validationErrors.chapter_name = '';
     }
 
-    // Validate induction date
+    if (!this.registerForm.category) {
+      this.validationErrors.category = 'Category is required';
+      isValid = false;
+    } else {
+      this.validationErrors.category = '';
+    }
+
+    if (!this.registerForm.meeting_role) {
+      this.validationErrors.meeting_role = 'Meeting role is required';
+      isValid = false;
+    } else {
+      this.validationErrors.meeting_role = '';
+    }
+
     if (!induction_date) {
       this.validationErrors.induction_date = 'Induction date is required';
       isValid = false;
@@ -575,7 +614,7 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       }
     }
 
-    return isValid && this.registerForm.meeting_role;
+    return isValid;
   }
 
   validateForm(): boolean {
@@ -584,15 +623,23 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     const mobile = this.registerForm.mobile_number;
     const induction_date = this.registerForm.induction_date;
 
-    return name && name.length >= 2 && /^[a-zA-Z\s]+$/.test(name) &&
-           email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
-           mobile && /^\d{10}$/.test(mobile) &&
-           this.registerForm.country &&
-           this.registerForm.state &&
-           this.registerForm.city &&
-           this.registerForm.chapter_name &&
-           this.registerForm.meeting_role &&
-           induction_date && new Date(induction_date) <= new Date();
+    return (
+      name &&
+      name.length >= 2 &&
+      /^[a-zA-Z\s]+$/.test(name) &&
+      email &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
+      mobile &&
+      /^\d{10}$/.test(mobile) &&
+      this.registerForm.country &&
+      this.registerForm.state &&
+      this.registerForm.city &&
+      this.registerForm.chapter_name &&
+      this.registerForm.meeting_role &&
+      this.registerForm.category &&
+      induction_date &&
+      new Date(induction_date) <= new Date()
+    );
   }
 
   resetForm(): void {
@@ -609,10 +656,10 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       country: '',
       sponseredBy: '',
       keywords: '',
-      induction_date: ''
+      induction_date: '',
+      category: '',
     };
 
-    // Reset validation errors
     this.validationErrors = {
       name: '',
       email: '',
@@ -621,10 +668,11 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       state: '',
       city: '',
       chapter_name: '',
-      induction_date: ''
+      induction_date: '',
+      meeting_role: '',
+      category: '',
     };
 
-    // Reset touched fields
     this.touchedFields = {
       name: false,
       email: false,
@@ -633,7 +681,9 @@ export class RegisterComponent implements OnInit, AfterViewInit {
       state: false,
       city: false,
       chapter_name: false,
-      induction_date: false
+      induction_date: false,
+      meeting_role: false,
+      category: false,
     };
 
     this.chapters = [];
@@ -668,5 +718,3 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     return new Date(dateString).toLocaleDateString();
   }
 }
-
-
