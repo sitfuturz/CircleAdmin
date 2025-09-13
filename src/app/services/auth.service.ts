@@ -370,6 +370,35 @@ export class AuthService {
       throw new Error(errorMessage); // Throw the specific error message
     }
   }
+
+  // Auth Service mein ye method add karo
+
+  async checkUserByEmail(email: string): Promise<any> {
+    try {
+      this.headers = []; // No token needed for checking user
+      const response = await this.apiManager.request(
+        {
+          url: `${apiEndpoints.CHECK_USER_BY_EMAIL}/${email}`,
+          method: 'GET',
+        },
+        null, // No body for GET request
+        this.headers
+      );
+
+      return response;
+    } catch (error: any) {
+      console.error('Check User Error:', error);
+
+      // Handle 404 (user not found) gracefully - don't show error toast
+      if (error.status === 404 || error.error?.status === 404) {
+        return { success: true, data: { found: false } };
+      }
+
+      // For other errors, don't show toast but log the error
+      return { success: false, data: { found: false } };
+    }
+  }
+
   getImageUrl(): string {
     return   environment.imageUrl;
   }

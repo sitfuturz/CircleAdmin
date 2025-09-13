@@ -1,3 +1,5 @@
+// ========== COMPONENT UPDATE (login.component.ts) ==========
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import {
   FormGroup,
@@ -12,6 +14,8 @@ import { Router } from '@angular/router';
 import { AppStorage } from '../../../core/utilities/app-storage';
 import { common } from '../../../core/constants/common';
 import { swalHelper } from '../../../core/constants/swal-helper';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-admin-login',
@@ -27,6 +31,11 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
   showForgotPassword: boolean = false;
   showResetFields: boolean = false;
   currentYear = new Date().getFullYear();
+
+  // Auto-detection properties
+  isCheckingEmail: boolean = false;
+  userFoundMessage: string = '';
+  private emailChangeSubject = new Subject<string>();
 
   loginForm = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
@@ -58,6 +67,79 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
         this.router.navigate(['/dashboard']);
       }
     }
+
+    // Setup email change listener
+    this.emailChangeSubject.pipe(
+      debounceTime(800),
+      distinctUntilChanged()
+    ).subscribe(email => {
+      if (email && this.isValidEmail(email)) {
+        this.checkUserDetails(email);
+      }
+    });
+  }
+
+  // Email change event handler
+  onEmailChange(event: any): void {
+    const email = event.target.value;
+
+    // Clear previous messages
+    this.userFoundMessage = '';
+
+    // Reset role and chapter if email is cleared
+    if (!email) {
+      this.loginForm.patchValue({
+        role: '',
+        chapter: ''
+      });
+      return;
+    }
+
+    this.emailChangeSubject.next(email);
+  }
+
+  // Email validation helper
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  // Check user details by email
+  async checkUserDetails(email: string): Promise<void> {
+    this.isCheckingEmail = true;
+
+    try {
+      const response = await this.authService.checkUserByEmail(email);
+
+      if (response && response.success && response.data && response.data.found) {
+        const userData = response.data;
+
+        // Auto-select role and chapter
+        this.loginForm.patchValue({
+          role: userData.role,
+          chapter: userData.chapter
+        });
+
+        this.userFoundMessage = `✓ ${userData.userType === 'admin' ? 'Admin' : 'User'} found - Role & Chapter selected automatically`;
+
+      } else {
+        // Clear selections if user not found
+        this.loginForm.patchValue({
+          role: '',
+          chapter: ''
+        });
+        this.userFoundMessage = '';
+      }
+    } catch (error) {
+      console.error('Error checking user details:', error);
+      this.loginForm.patchValue({
+        role: '',
+        chapter: ''
+      });
+      this.userFoundMessage = '';
+    } finally {
+      this.isCheckingEmail = false;
+    }
   }
 
   togglePassword(): void {
@@ -72,7 +154,7 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
     this.showForgotPassword = !this.showForgotPassword;
     this.showResetFields = false;
     this.forgotPasswordForm.reset();
-    
+
     this.forgotPasswordForm.get('code')?.clearValidators();
     this.forgotPasswordForm.get('password')?.clearValidators();
     this.forgotPasswordForm.get('code')?.updateValueAndValidity();
@@ -83,9 +165,9 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
     if (!this.showResetFields) {
       return this.forgotPasswordForm.get('email')?.valid || false;
     } else {
-      return (this.forgotPasswordForm.get('email')?.valid && 
-              this.forgotPasswordForm.get('code')?.valid && 
-              this.forgotPasswordForm.get('password')?.valid) || false;
+      return (this.forgotPasswordForm.get('email')?.valid &&
+        this.forgotPasswordForm.get('code')?.valid &&
+        this.forgotPasswordForm.get('password')?.valid) || false;
     }
   }
 
@@ -112,9 +194,9 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
       if (response && response.data && response.data.token) {
         this.storage.set(common.TOKEN, response.data.token);
         this.storage.set('user', response.data.admin);
-        
+
         swalHelper.showToast('Login successful', 'success');
-        
+
         const userRole = response.data.admin.role;
         if (userRole === 'LT') {
           this.router.navigate(['/LTPoints']);
@@ -154,13 +236,13 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
       if (!this.showResetFields) {
         const email = { email: this.forgotPasswordForm.value.email as string };
         const response = await this.authService.forgotPassword(email);
-        
+
         if (response && response.success) {
           const successMessage = response.message || 'Password reset code sent to email';
           swalHelper.showToast(successMessage, 'success');
-          
+
           this.showResetFields = true;
-          
+
           this.forgotPasswordForm.get('code')?.setValidators([Validators.required]);
           this.forgotPasswordForm.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
           this.forgotPasswordForm.get('code')?.updateValueAndValidity();
@@ -175,13 +257,13 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
           code: this.forgotPasswordForm.value.code as string,
           password: this.forgotPasswordForm.value.password as string,
         };
-        
+
         const response = await this.authService.updatePassword(resetData);
-        
+
         if (response && response.success) {
           const successMessage = response.message || 'Password updated successfully';
           swalHelper.showToast(successMessage, 'success');
-          
+
           this.toggleForgotPassword();
         } else {
           const errorMessage = response?.message || 'Failed to update password';
@@ -190,9 +272,9 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
       }
     } catch (error: any) {
       console.error('Forgot Password Error:', error);
-      
+
       let errorMessage = 'An error occurred';
-      
+
       if (error.response?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
@@ -200,7 +282,7 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
-      
+
       swalHelper.showToast(errorMessage, 'error');
     } finally {
       this.isLoading = false;
@@ -209,5 +291,6 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     document.body.style.backgroundColor = '';
+    this.emailChangeSubject.unsubscribe();
   }
 }

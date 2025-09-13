@@ -12,23 +12,27 @@
     <!-- Login Form -->
     <div class="login-form" *ngIf="!showForgotPassword">
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-        <!-- Email Field -->
+        <!-- Email Field with Auto-Detection -->
         <div class="form-group">
           <div class="input-wrapper">
             <span class="input-icon">
               <i class="fa fa-envelope"></i>
             </span>
-            <input
-              type="email"
-              formControlName="email"
-              placeholder="Email Address"
-              class="form-control"
+            <input type="email" formControlName="email" placeholder="Email Address" class="form-control"
               [ngClass]="{'is-invalid': loginForm.get('email')?.invalid && loginForm.get('email')?.touched}"
-            >
+              (input)="onEmailChange($event)">
+            <!-- Loading spinner for email check -->
+            <span class="email-checking-spinner" *ngIf="isCheckingEmail">
+              <i class="fa fa-spinner fa-spin"></i>
+            </span>
           </div>
           <div class="error-message" *ngIf="loginForm.get('email')?.errors && loginForm.get('email')?.touched">
             <span *ngIf="loginForm.get('email')?.errors?.['required']">Email is required</span>
             <span *ngIf="loginForm.get('email')?.errors?.['email']">Please enter a valid email</span>
+          </div>
+          <!-- Success message when user found -->
+          <div class="success-message" *ngIf="userFoundMessage">
+            <i class="fa fa-check-circle"></i> {{userFoundMessage}}
           </div>
         </div>
 
@@ -38,13 +42,9 @@
             <span class="input-icon">
               <i class="fa fa-lock"></i>
             </span>
-            <input
-              [type]="isPassword ? 'password' : 'text'"
-              formControlName="password"
-              placeholder="Password"
+            <input [type]="isPassword ? 'password' : 'text'" formControlName="password" placeholder="Password"
               class="form-control"
-              [ngClass]="{'is-invalid': loginForm.get('password')?.invalid && loginForm.get('password')?.touched}"
-            >
+              [ngClass]="{'is-invalid': loginForm.get('password')?.invalid && loginForm.get('password')?.touched}">
             <span class="toggle-password" (click)="togglePassword()">
               <i [class]="isPassword ? 'fa fa-eye' : 'fa fa-eye-slash'"></i>
             </span>
@@ -57,15 +57,12 @@
 
         <!-- Role Dropdown -->
         <div class="form-group">
-          <div class="input-wrapper ">
-            <span class="input-icon ">
+          <div class="input-wrapper">
+            <span class="input-icon">
               <i class="fa fa-user"></i>
             </span>
-            <select
-              formControlName="role"
-              class="form-control custom-select"
-              [ngClass]="{'is-invalid': loginForm.get('role')?.invalid && loginForm.get('role')?.touched}"
-            >
+            <select formControlName="role" class="form-control custom-select"
+              [ngClass]="{'is-invalid': loginForm.get('role')?.invalid && loginForm.get('role')?.touched}">
               <option value="" disabled selected>Select Role</option>
               <option value="admin">Admin</option>
               <option value="advisoryBoard">Advisory Board</option>
@@ -85,11 +82,8 @@
             <span class="input-icon">
               <i class="fa fa-book"></i>
             </span>
-            <select
-              formControlName="chapter"
-              class="form-control custom-select"
-              [ngClass]="{'is-invalid': loginForm.get('chapter')?.invalid && loginForm.get('chapter')?.touched}"
-            >
+            <select formControlName="chapter" class="form-control custom-select"
+              [ngClass]="{'is-invalid': loginForm.get('chapter')?.invalid && loginForm.get('chapter')?.touched}">
               <option value="" disabled selected>Select Chapter</option>
               <option value="Achiever">Achiever</option>
               <option value="Believer">Believer</option>
@@ -106,12 +100,8 @@
 
         <!-- Submit Button -->
         <div class="form-group">
-          <button
-            type="submit"
-            class="login-button"
-            [disabled]="loginForm.invalid || isLoading"
-            [ngClass]="{'button-loading': isLoading}"
-          >
+          <button type="submit" class="login-button" [disabled]="loginForm.invalid || isLoading"
+            [ngClass]="{'button-loading': isLoading}">
             <span *ngIf="!isLoading">Log In</span>
             <span *ngIf="isLoading" class="spinner"></span>
           </button>
@@ -124,7 +114,7 @@
       </form>
     </div>
 
-    <!-- Forgot Password Form -->
+    <!-- Forgot Password Form (unchanged) -->
     <div class="login-form" *ngIf="showForgotPassword">
       <form [formGroup]="forgotPasswordForm" (ngSubmit)="onForgotPasswordSubmit()">
         <!-- Email Field -->
@@ -133,70 +123,56 @@
             <span class="input-icon">
               <i class="fa fa-envelope"></i>
             </span>
-            <input
-              type="email"
-              formControlName="email"
-              placeholder="Enter your email"
-              class="form-control"
-              [ngClass]="{'is-invalid': forgotPasswordForm.get('email')?.invalid && forgotPasswordForm.get('email')?.touched}"
-            >
+            <input type="email" formControlName="email" placeholder="Enter your email" class="form-control"
+              [ngClass]="{'is-invalid': forgotPasswordForm.get('email')?.invalid && forgotPasswordForm.get('email')?.touched}">
           </div>
-          <div class="error-message" *ngIf="forgotPasswordForm.get('email')?.errors && forgotPasswordForm.get('email')?.touched">
+          <div class="error-message"
+            *ngIf="forgotPasswordForm.get('email')?.errors && forgotPasswordForm.get('email')?.touched">
             <span *ngIf="forgotPasswordForm.get('email')?.errors?.['required']">Email is required</span>
             <span *ngIf="forgotPasswordForm.get('email')?.errors?.['email']">Please enter a valid email</span>
           </div>
         </div>
 
-        <!-- Reset Code Field (shown after email is submitted) -->
+        <!-- Reset Code Field -->
         <div class="form-group" *ngIf="showResetFields">
           <div class="input-wrapper">
             <span class="input-icon">
               <i class="fa fa-key"></i>
             </span>
-            <input
-              type="text"
-              formControlName="code"
-              placeholder="Enter reset code"
-              class="form-control"
-              [ngClass]="{'is-invalid': forgotPasswordForm.get('code')?.invalid && forgotPasswordForm.get('code')?.touched}"
-            >
+            <input type="text" formControlName="code" placeholder="Enter reset code" class="form-control"
+              [ngClass]="{'is-invalid': forgotPasswordForm.get('code')?.invalid && forgotPasswordForm.get('code')?.touched}">
           </div>
-          <div class="error-message" *ngIf="forgotPasswordForm.get('code')?.errors && forgotPasswordForm.get('code')?.touched">
+          <div class="error-message"
+            *ngIf="forgotPasswordForm.get('code')?.errors && forgotPasswordForm.get('code')?.touched">
             <span *ngIf="forgotPasswordForm.get('code')?.errors?.['required']">Reset code is required</span>
           </div>
         </div>
 
-        <!-- New Password Field (shown after email is submitted) -->
+        <!-- New Password Field -->
         <div class="form-group" *ngIf="showResetFields">
           <div class="input-wrapper">
             <span class="input-icon">
               <i class="fa fa-lock"></i>
             </span>
-            <input
-              [type]="isNewPassword ? 'password' : 'text'"
-              formControlName="password"
-              placeholder="Enter new password"
-              class="form-control"
-              [ngClass]="{'is-invalid': forgotPasswordForm.get('password')?.invalid && forgotPasswordForm.get('password')?.touched}"
-            >
+            <input [type]="isNewPassword ? 'password' : 'text'" formControlName="password"
+              placeholder="Enter new password" class="form-control"
+              [ngClass]="{'is-invalid': forgotPasswordForm.get('password')?.invalid && forgotPasswordForm.get('password')?.touched}">
             <span class="toggle-password" (click)="toggleNewPassword()">
               <i [class]="isNewPassword ? 'fa fa-eye' : 'fa fa-eye-slash'"></i>
             </span>
           </div>
-          <div class="error-message" *ngIf="forgotPasswordForm.get('password')?.errors && forgotPasswordForm.get('password')?.touched">
+          <div class="error-message"
+            *ngIf="forgotPasswordForm.get('password')?.errors && forgotPasswordForm.get('password')?.touched">
             <span *ngIf="forgotPasswordForm.get('password')?.errors?.['required']">Password is required</span>
-            <span *ngIf="forgotPasswordForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters</span>
+            <span *ngIf="forgotPasswordForm.get('password')?.errors?.['minlength']">Password must be at least 6
+              characters</span>
           </div>
         </div>
 
-        <!-- Submit Button - FIXED VERSION -->
+        <!-- Submit Button -->
         <div class="form-group">
-          <button
-            type="submit"
-            class="login-button"
-            [disabled]="isLoading || !isCurrentStepValid()"
-            [ngClass]="{'button-loading': isLoading}"
-          >
+          <button type="submit" class="login-button" [disabled]="isLoading || !isCurrentStepValid()"
+            [ngClass]="{'button-loading': isLoading}">
             <span *ngIf="!isLoading && !showResetFields">Send Reset Code</span>
             <span *ngIf="!isLoading && showResetFields">Update Password</span>
             <span *ngIf="isLoading" class="spinner"></span>

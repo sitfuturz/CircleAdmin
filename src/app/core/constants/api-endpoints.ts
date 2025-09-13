@@ -113,6 +113,8 @@ public GET_ATTENDANCE_RECORDS:string=`${this.PATH}/getAttendanceRecords`
 public GET_POINT_HISTORY :string=`${this.PATH}/getPointsHistory`
 
 public ADMIN_LOGIN :string=`${this.PATH}/login`
+public CHECK_USER_BY_EMAIL: string = `${this.PATH}/check-user`
+
 
 public GET_EVENTS_BY_CHAPTER :string=`${this.PATH}/getEventByChapter`
 

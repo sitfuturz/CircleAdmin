@@ -1,5 +1,3 @@
-//E31E24
-
 // Variables
 $primary-color: #E31E24;
 $secondary-color: #a8672a;
@@ -7,6 +5,7 @@ $accent-color: #4CAF50;
 $text-color: #333;
 $light-text: #666;
 $error-color: #f44336;
+$success-color: #28a745;
 $white: #fff;
 $box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 $transition: all 0.3s ease;
@@ -48,48 +47,6 @@ $transition: all 0.3s ease;
 
 .logo-container {
   margin-bottom: 15px;
-}
-.custom-select {
-  
-  /* Basic structure */
-  width: 100% !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  
-  
-  
- 
-  
-  
-  
-}
-
-
-
-
-/* Options styling */
-.custom-select option {
-  color: #333 !important;
-  background-color: #fff !important;
-  padding: 10px 15px !important;
-  font-size: 16px !important;
-  line-height: 1.4 !important;
-  font-weight: 400 !important;
-}
-
-
-
-
-.input-wrapper {
-  position: relative;
-}
-
-.input-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #495057;
 }
 
 .logo {
@@ -138,6 +95,19 @@ $transition: all 0.3s ease;
   color: $light-text;
 }
 
+// Auto-detection spinner
+.email-checking-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: $primary-color;
+
+  i {
+    animation: spin 1s linear infinite;
+  }
+}
+
 .form-control {
   width: 100%;
   padding: 12px 12px 12px 40px;
@@ -145,15 +115,32 @@ $transition: all 0.3s ease;
   border-radius: 8px;
   font-size: 15px;
   transition: $transition;
-  
+
   &:focus {
     border-color: $primary-color;
     box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
     outline: none;
   }
-  
+
   &.is-invalid {
     border-color: $error-color;
+  }
+}
+
+.custom-select {
+  /* Basic structure */
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+
+  /* Options styling */
+  option {
+    color: #333 !important;
+    background-color: #fff !important;
+    padding: 10px 15px !important;
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+    font-weight: 400 !important;
   }
 }
 
@@ -164,7 +151,7 @@ $transition: all 0.3s ease;
   transform: translateY(-50%);
   color: $light-text;
   cursor: pointer;
-  
+
   &:hover {
     color: $primary-color;
   }
@@ -175,6 +162,21 @@ $transition: all 0.3s ease;
   color: $error-color;
   margin-top: 5px;
   min-height: 18px;
+}
+
+// Success message for auto-detection
+.success-message {
+  font-size: 12px;
+  color: $success-color;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  animation: fadeIn 0.3s ease;
+
+  i {
+    font-size: 14px;
+  }
 }
 
 // Button Styling
@@ -190,16 +192,16 @@ $transition: all 0.3s ease;
   cursor: pointer;
   transition: $transition;
   position: relative;
-  
+
   &:hover {
     background-color: $secondary-color;
   }
-  
+
   &:disabled {
     background-color: #b0bec5;
     cursor: not-allowed;
   }
-  
+
   &.button-loading {
     color: transparent;
   }
@@ -220,21 +222,70 @@ $transition: all 0.3s ease;
 }
 
 @keyframes spin {
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+// Fade in animation for success message
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Forgot password link
+.forgot-password {
+  text-align: center;
+  margin-top: 15px;
+
+  a {
+    color: $primary-color;
+    text-decoration: none;
+    font-size: 14px;
+    transition: $transition;
+
+    &:hover {
+      text-decoration: underline;
+      color: $secondary-color;
+    }
+  }
 }
 
 // Footer
 .login-footer {
   text-align: center;
-  color: rgba($white, 0.8);
-  font-size: 14px;
-  
-  a {
-    color: $white;
-    text-decoration: none;
-    
-    &:hover {
-      text-decoration: underline;
-    }
+  padding: 20px 30px;
+  background-color: rgba($primary-color, 0.05);
+
+  p {
+    color: $light-text;
+    font-size: 12px;
+    margin: 0;
+  }
+}
+
+// Responsive design
+@media (max-width: 480px) {
+  .login-container {
+    padding: 10px;
+  }
+
+  .login-card {
+    max-width: 100%;
+  }
+
+  .login-form {
+    padding: 20px;
+  }
+
+  .login-header {
+    padding: 20px;
   }
 }
