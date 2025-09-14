@@ -26,7 +26,7 @@ export class RoleGuard implements CanActivate {
       }
       // Redirect to a not-authorized page or their dashboard
       if (userRole === 'LT') {
-        this.router.navigate(['/LTPoints']);
+        this.router.navigate(['/dashboard']);
       } else {
         this.router.navigate(['/dashboard']);
       }
