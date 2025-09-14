@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
 import { swalHelper } from '../../../core/constants/swal-helper';
+import { CustomhelperService } from 'src/app/services/customhelper.service';
 
 @Component({
   selector: 'app-import-users',
@@ -14,8 +15,15 @@ export class ImportUsersComponent {
   selectedFile: File | null = null;
   uploading: boolean = false;
   uploadResponse: { success: boolean; message: string; data?: any } | null = null;
+  isAdmin: boolean = false;
+   constructor(
+    private authService: AuthService,
+    private customHelper: CustomhelperService 
+  ) {}
 
-  constructor(private authService: AuthService) {}
+    ngOnInit(): void {
+    this.isAdmin = this.customHelper.getChapterAndIsAdmin().isAdmin;
+  }
 
   // Handle file selection
   onFileChange(event: Event): void {

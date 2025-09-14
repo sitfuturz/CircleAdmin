@@ -12,6 +12,7 @@ import { AuthService } from '../../../services/auth.service';
 import { DashboardService } from '../../../services/auth.service';
 import { swalHelper } from '../../../core/constants/swal-helper';
 import { debounceTime, Subject } from 'rxjs';
+import { CustomhelperService } from 'src/app/services/customhelper.service';
 
 declare var $: any;
 declare var bootstrap: any;
@@ -20,7 +21,7 @@ declare var bootstrap: any;
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, FormsModule, NgSelectModule],
-  providers: [RegisterUserAuthService, CategoryService, CountryService, StateService, CityService, ChapterService, AuthService, DashboardService],
+  providers: [RegisterUserAuthService, CategoryService, CountryService, StateService, CityService, ChapterService, AuthService, DashboardService, CustomhelperService],
   templateUrl: './userRegisteration.component.html',
   styleUrls: ['./userRegisteration.component.css'],
 })
@@ -41,6 +42,8 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     induction_date: '',
     category: '',
   };
+
+  isAdmin: boolean = false;
 
   countries: Country[] = [];
   states: State[] = [];
@@ -107,7 +110,8 @@ export class RegisterComponent implements OnInit, AfterViewInit {
     private chapterService: ChapterService,
     private authService: AuthService,
     private dashboardService: DashboardService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private customHelper: CustomhelperService
   ) {
     this.searchSubject.pipe(debounceTime(500)).subscribe(() => {
       this.fetchUsers();
@@ -115,6 +119,8 @@ export class RegisterComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
+    this.isAdmin = this.customHelper.getChapterAndIsAdmin().isAdmin;
+
     this.fetchCountries();
     this.fetchStates();
     this.fetchCities();
