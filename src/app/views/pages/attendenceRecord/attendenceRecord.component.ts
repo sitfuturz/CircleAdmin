@@ -8,12 +8,13 @@ import { ChapterService } from '../../../services/auth.service';
 import { ExportService } from '../../../services/export.service';
 import { swalHelper } from '../../../core/constants/swal-helper';
 import { debounceTime, Subject } from 'rxjs';
+import { CustomhelperService } from 'src/app/services/customhelper.service';
 
 @Component({
   selector: 'app-attendance-data',
   standalone: true,
   imports: [CommonModule, FormsModule, NgxPaginationModule, NgSelectModule],
-  providers: [AttendanceService1, ChapterService, ExportService],
+  providers: [AttendanceService1, ChapterService, ExportService, CustomhelperService],
   templateUrl: './attendenceRecord.component.html',
   styleUrls: ['./attendenceRecord.component.css']
 })
@@ -38,13 +39,15 @@ export class AttendanceDataComponent implements OnInit {
   eventsLoading: boolean = false;
   exporting: boolean = false;
   toggling: { [key: string]: boolean } = {};
+  isAdmin: boolean = false; // Track if user is admin
+  userChapter: string = ''; // Store user's chapter
 
   Math = Math;
 
   filters = {
     page: 1,
     limit: 10,
-    chapter: null, // Changed from '' to null
+    chapter: this.userChapter || null, // Changed from '' to null
     eventId: null // Changed from '' to null
   };
 
@@ -58,6 +61,7 @@ export class AttendanceDataComponent implements OnInit {
     private attendanceService: AttendanceService1,
     private chapterService: ChapterService,
     private exportService: ExportService,
+    private customhelperService: CustomhelperService, // Inject CustomhelperService
     private cdr: ChangeDetectorRef
   ) {
     this.filterSubject.pipe(debounceTime(300)).subscribe(() => {
@@ -66,6 +70,16 @@ export class AttendanceDataComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Fetch user data to set default chapter and isAdmin
+    const { chapter, isAdmin } = this.customhelperService.getChapterAndIsAdmin();
+    this.userChapter = chapter;
+    this.isAdmin = isAdmin;
+
+    // Set default chapter in filters if user has a chapter
+    if (this.userChapter) {
+      this.filters.chapter = this.userChapter;
+    }
+
     this.fetchChapters();
   }
 
@@ -77,7 +91,11 @@ export class AttendanceDataComponent implements OnInit {
         limit: 1000,
         search: ''
       });
-      this.chapters = response.docs|| [];
+      this.chapters = response.docs || [];
+      // If not admin, filter chapters to only show user's chapter
+      if (!this.isAdmin && this.userChapter) {
+        this.chapters = this.chapters.filter(chapter => chapter.name === this.userChapter);
+      }
     } catch (error) {
       console.error('Error fetching chapters:', error);
       swalHelper.showToast('Failed to fetch chapters', 'error');
@@ -180,7 +198,7 @@ export class AttendanceDataComponent implements OnInit {
     this.filters = {
       page: 1,
       limit: 10,
-      chapter: null, // Changed from '' to null
+      chapter: this.userChapter || null, // Reset to user's chapter
       eventId: null // Changed from '' to null
     };
     this.events = [];

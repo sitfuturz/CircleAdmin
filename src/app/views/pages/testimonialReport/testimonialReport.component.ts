@@ -9,12 +9,13 @@ import { NgxPaginationModule } from 'ngx-pagination';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ExportService } from '../../../services/export.service';
 import { environment } from 'src/env/env.local';
+import { CustomhelperService } from 'src/app/services/customhelper.service';
 
 @Component({
   selector: 'app-testimonials',
   standalone: true,
   imports: [CommonModule, FormsModule, NgxPaginationModule, NgSelectModule],
-  providers: [TestimonialService, ChapterService, ExportService],
+  providers: [TestimonialService, ChapterService, ExportService, CustomhelperService],
   templateUrl: './testimonialReport.component.html',
   styleUrls: ['./testimonialReport.component.css'],
 })
@@ -35,6 +36,8 @@ export class TestimonialsComponent implements OnInit {
   loading: boolean = false;
   chaptersLoading: boolean = false;
   exporting: boolean = false;
+  isAdmin: boolean = false; // Track if user is admin
+  userChapter: string = ''; // Store user's chapter
   
   // Add Math object for use in template
   Math = Math;
@@ -42,7 +45,7 @@ export class TestimonialsComponent implements OnInit {
   filters = {
     page: 1,
     limit: 10,
-    chapterName: null,
+    chapterName: null as string | null,
     startDate: this.formatDateForInput(new Date(new Date().setDate(new Date().getDate() - 30))),
     endDate: this.formatDateForInput(new Date())
   };
@@ -58,6 +61,7 @@ export class TestimonialsComponent implements OnInit {
     private testimonialService: TestimonialService,
     private chapterService: ChapterService,
     private exportService: ExportService,
+    private customhelperService: CustomhelperService, // Inject CustomhelperService
     private cdr: ChangeDetectorRef
   ) {
     this.filterSubject.pipe(debounceTime(300)).subscribe(() => {
@@ -66,6 +70,16 @@ export class TestimonialsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Fetch user data to set default chapter and isAdmin
+    const { chapter, isAdmin } = this.customhelperService.getChapterAndIsAdmin();
+    this.userChapter = chapter;
+    this.isAdmin = isAdmin;
+
+    // Set default chapter in filters if user has a chapter
+    if (this.userChapter) {
+      this.filters.chapterName = this.userChapter;
+    }
+
     this.fetchChapters();
     this.fetchTestimonials();
   }
@@ -100,7 +114,11 @@ export class TestimonialsComponent implements OnInit {
         limit: 1000,
         search: ''
       });
-      this.chapters = response.docs|| [];
+      this.chapters = response.docs || [];
+      // If not admin, filter chapters to only show user's chapter
+      if (!this.isAdmin && this.userChapter) {
+        this.chapters = this.chapters.filter(chapter => chapter.name === this.userChapter);
+      }
     } catch (error) {
       console.error('Error fetching chapters:', error);
       swalHelper.showToast('Failed to fetch chapters', 'error');
@@ -123,7 +141,7 @@ export class TestimonialsComponent implements OnInit {
     this.filters = {
       page: 1,
       limit: 10,
-      chapterName: null,
+      chapterName: this.userChapter || null, // Reset to user's chapter
       startDate: this.formatDateForInput(new Date(new Date().setDate(new Date().getDate() - 30))),
       endDate: this.formatDateForInput(new Date())
     };
@@ -142,7 +160,6 @@ export class TestimonialsComponent implements OnInit {
       year: 'numeric', 
       month: 'short', 
       day: 'numeric',
-     
     });
   }
 

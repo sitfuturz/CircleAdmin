@@ -9,12 +9,13 @@ import { ExportService } from '../../../services/export.service';
 import { swalHelper } from '../../../core/constants/swal-helper';
 import { debounceTime, Subject } from 'rxjs';
 import { environment } from 'src/env/env.local';
+import { CustomhelperService } from 'src/app/services/customhelper.service';
 
 @Component({
   selector: 'app-points-history',
   standalone: true,
   imports: [CommonModule, FormsModule, NgxPaginationModule, NgSelectModule],
-  providers: [PointsHistoryService, ChapterService, ExportService],
+  providers: [PointsHistoryService, ChapterService, ExportService, CustomhelperService],
   templateUrl: './pointhistory.component.html',
   styleUrls: ['./pointhistory.component.css'],
 })
@@ -35,13 +36,15 @@ export class PointsHistoryComponent implements OnInit {
   loading: boolean = false;
   chaptersLoading: boolean = false;
   exporting: boolean = false;
+  isAdmin: boolean = false; // Track if user is admin
+  userChapter: string = ''; // Store user's chapter
 
   Math = Math;
 
   filters = {
     page: 1,
     limit: 10,
-    chapter_name: null,
+    chapter_name: null as string | null,
     fromDate: this.formatDateForInput(new Date(new Date().setDate(new Date().getDate() - 30))),
     toDate: this.formatDateForInput(new Date())
   };
@@ -56,6 +59,7 @@ export class PointsHistoryComponent implements OnInit {
     private pointsHistoryService: PointsHistoryService,
     private chapterService: ChapterService,
     private exportService: ExportService,
+    private customhelperService: CustomhelperService, // Inject CustomhelperService
     private cdr: ChangeDetectorRef
   ) {
     this.filterSubject.pipe(debounceTime(300)).subscribe(() => {
@@ -64,6 +68,16 @@ export class PointsHistoryComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Fetch user data to set default chapter and isAdmin
+    const { chapter, isAdmin } = this.customhelperService.getChapterAndIsAdmin();
+    this.userChapter = chapter;
+    this.isAdmin = isAdmin;
+
+    // Set default chapter in filters if user has a chapter
+    if (this.userChapter) {
+      this.filters.chapter_name = this.userChapter;
+    }
+
     this.fetchChapters();
     this.fetchPointsHistory();
   }
@@ -119,6 +133,10 @@ export class PointsHistoryComponent implements OnInit {
         search: ''
       });
       this.chapters = response.docs || [];
+      // If not admin, filter chapters to only show user's chapter
+      if (!this.isAdmin && this.userChapter) {
+        this.chapters = this.chapters.filter(chapter => chapter.name === this.userChapter);
+      }
     } catch (error) {
       console.error('Error fetching chapters:', error);
       swalHelper.showToast('Failed to fetch chapters', 'error');
@@ -143,7 +161,7 @@ export class PointsHistoryComponent implements OnInit {
     this.filters = {
       page: 1,
       limit: 10,
-      chapter_name: null,
+      chapter_name: this.userChapter || null, // Reset to user's chapter
       fromDate: this.formatDateForInput(new Date(new Date().setDate(new Date().getDate() - 30))),
       toDate: this.formatDateForInput(new Date())
     };

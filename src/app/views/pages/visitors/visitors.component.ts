@@ -10,12 +10,13 @@ import { NgxPaginationModule } from 'ngx-pagination';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ExportService } from '../../../services/export.service';
 import { environment } from 'src/env/env.local';
+import { CustomhelperService } from 'src/app/services/customhelper.service';
 
 @Component({
   selector: 'app-visitors',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, NgxPaginationModule, NgSelectModule],
-  providers: [VisitorService, ChapterService, AttendanceService1, ExportService],
+  providers: [VisitorService, ChapterService, AttendanceService1, ExportService, CustomhelperService],
   templateUrl: './visitors.component.html',
   styleUrls: ['./visitors.component.css'],
 })
@@ -43,13 +44,15 @@ export class VisitorsComponent implements OnInit {
   showAddVisitorModal: boolean = false;
   addVisitorForm: FormGroup;
   modalLoading: boolean = false;
+  isAdmin: boolean = false; // Track if user is admin
+  userChapter: string = ''; // Store user's chapter
 
   Math = Math;
 
   filters = {
     page: 1,
     limit: 10,
-    chapterName: null,
+    chapterName: null as string | null,
     startDate: this.formatDateForInput(new Date(new Date().setDate(new Date().getDate() - 30))),
     endDate: this.formatDateForInput(new Date()),
   };
@@ -66,6 +69,7 @@ export class VisitorsComponent implements OnInit {
     private attendanceService: AttendanceService1,
     private exportService: ExportService,
     private fb: FormBuilder,
+    private customhelperService: CustomhelperService, // Inject CustomhelperService
     private cdr: ChangeDetectorRef
   ) {
     this.addVisitorForm = this.fb.group({
@@ -89,6 +93,16 @@ export class VisitorsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Fetch user data to set default chapter and isAdmin
+    const { chapter, isAdmin } = this.customhelperService.getChapterAndIsAdmin();
+    this.userChapter = chapter;
+    this.isAdmin = isAdmin;
+
+    // Set default chapter in filters if user has a chapter
+    if (this.userChapter) {
+      this.filters.chapterName = this.userChapter;
+    }
+
     this.fetchChapters();
     this.filterSubject.next();
   }
@@ -131,6 +145,10 @@ export class VisitorsComponent implements OnInit {
         search: '',
       });
       this.chapters = response.docs || [];
+      // If not admin, filter chapters to only show user's chapter
+      if (!this.isAdmin && this.userChapter) {
+        this.chapters = this.chapters.filter(chapter => chapter.name === this.userChapter);
+      }
       this.cdr.detectChanges();
     } catch (error) {
       console.error('Error fetching chapters:', error);
@@ -202,6 +220,11 @@ export class VisitorsComponent implements OnInit {
     });
     this.events = [];
     this.users = [];
+    // Set default chapter if user has one
+    if (this.userChapter) {
+      this.addVisitorForm.patchValue({ chapterName: this.userChapter });
+      this.onChapterChange(this.userChapter);
+    }
     this.cdr.detectChanges();
   }
 
@@ -267,7 +290,7 @@ export class VisitorsComponent implements OnInit {
     this.filters = {
       page: 1,
       limit: 10,
-      chapterName: null,
+      chapterName: this.userChapter || null, // Reset to user's chapter
       startDate: this.formatDateForInput(new Date(new Date().setDate(new Date().getDate() - 30))),
       endDate: this.formatDateForInput(new Date()),
     };

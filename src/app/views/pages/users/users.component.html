@@ -115,33 +115,33 @@
                 {{user.isActive ? 'Active' : 'Inactive'}}
               </span>
             </td>
-            <td class="text-end pe-4 py-3">
-              <div class="dropdown">
-                <button class="btn btn-sm btn-outline-primary rounded-pill dropdown-toggle" type="button"
-                  data-bs-toggle="dropdown" aria-expanded="false">
-                  Actions
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                  <li><a class="dropdown-item" (click)="viewUserDetails(user)" style="cursor: pointer;">
-                    <i class="bi bi-eye-fill me-2 text-primary"></i> View Details
-                  </a></li>
-                  <li><a class="dropdown-item" (click)="editUser(user)" style="cursor: pointer;">
-                    <i class="bi bi-pencil-fill me-2 text-warning"></i> Edit
-                  </a></li>
-                  <li><a class="dropdown-item" (click)="openNotificationModal(user)" style="cursor: pointer;">
-                    <i class="bi bi-bell-fill me-2 text-info"></i> Send Notification
-                  </a></li>
-                  <li><a class="dropdown-item" (click)="openEmailModal(user)" style="cursor: pointer;">
-                      <i class="bi bi-envelope-fill me-2 text-primary"></i> Send Email
-                    </a></li>
-                  <li><a class="dropdown-item" (click)="openWhatsAppModal(user)" style="cursor: pointer;">
-                      <i class="bi bi-whatsapp me-2 text-success"></i> Send WhatsApp</a></li>
-                  <li><a class="dropdown-item text-danger" (click)="deleteUser(user._id)" style="cursor: pointer;">
-                    <i class="bi bi-trash-fill me-2"></i> Delete
-                  </a></li>
-                </ul>
-              </div>
-            </td>
+        <td class="text-end pe-4 py-3">
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-primary rounded-pill dropdown-toggle" type="button"
+      data-bs-toggle="dropdown" aria-expanded="false">
+      Actions
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+      <li><a class="dropdown-item" (click)="viewUserDetails(user)" style="cursor: pointer;">
+        <i class="bi bi-eye-fill me-2 text-primary"></i> View Details
+      </a></li>
+      <li *ngIf="isAdmin"><a class="dropdown-item" (click)="editUser(user)" style="cursor: pointer;">
+        <i class="bi bi-pencil-fill me-2 text-warning"></i> Edit
+      </a></li>
+      <li *ngIf="isAdmin"><a class="dropdown-item" (click)="openNotificationModal(user)" style="cursor: pointer;">
+        <i class="bi bi-bell-fill me-2 text-info"></i> Send Notification
+      </a></li>
+      <li *ngIf="isAdmin"><a class="dropdown-item" (click)="openEmailModal(user)" style="cursor: pointer;">
+        <i class="bi bi-envelope-fill me-2 text-primary"></i> Send Email
+      </a></li>
+      <li *ngIf="isAdmin"><a class="dropdown-item" (click)="openWhatsAppModal(user)" style="cursor: pointer;">
+        <i class="bi bi-whatsapp me-2 text-success"></i> Send WhatsApp</a></li>
+      <li *ngIf="isAdmin"><a class="dropdown-item text-danger" (click)="deleteUser(user._id)" style="cursor: pointer;">
+        <i class="bi bi-trash-fill me-2"></i> Delete
+      </a></li>
+    </ul>
+  </div>
+</td>
           </tr>
         </tbody>
       </table>

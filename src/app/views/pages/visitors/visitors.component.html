@@ -28,6 +28,7 @@
               bindValue="name"
               placeholder="--Select--"
               [(ngModel)]="filters.chapterName"
+              [disabled]="!isAdmin && userChapter"
               (change)="onFilterChange()">
             </ng-select>
           </div>

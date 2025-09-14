@@ -6,7 +6,6 @@ import { ReferralService1 } from '../../../services/auth.service';
 import { ExportService } from '../../../services/export.service';
 import { ChapterService } from '../../../services/auth.service';
 import { swalHelper } from '../../../core/constants/swal-helper';
-
 import { debounceTime, Subject } from 'rxjs';
 import { environment } from 'src/env/env.local';
 import { NgxPaginationModule } from 'ngx-pagination';
@@ -14,6 +13,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import * as jspdf from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
+import { CustomhelperService } from 'src/app/services/customhelper.service';
 
 declare var $: any;
 declare var bootstrap: any;
@@ -22,7 +22,7 @@ declare var bootstrap: any;
   selector: 'app-users',
   standalone: true,
   imports: [CommonModule, FormsModule, NgxPaginationModule, NgSelectModule],
-  providers: [ExportService],
+  providers: [ExportService, CustomhelperService],
   templateUrl: './users.component.html',
   styleUrls: ['./users.component.css']
 })
@@ -58,6 +58,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
     description: ''
   };
   notificationLoading: boolean = false;
+  isAdmin: boolean = false; // Track if user is admin
 
   paginationConfig = {
     id: 'users-pagination'
@@ -126,8 +127,6 @@ export class UsersComponent implements OnInit, AfterViewInit {
     message: ''
   };
 
-
-
   private searchSubject = new Subject<string>();
 
   constructor(
@@ -135,6 +134,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
     private referralService: ReferralService1,
     private chapterService: ChapterService,
     private exportService: ExportService,
+    private customhelperService: CustomhelperService, // Inject CustomhelperService
     private cdr: ChangeDetectorRef
   ) {
     this.searchSubject.pipe(debounceTime(500)).subscribe(() => {
@@ -143,6 +143,16 @@ export class UsersComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
+    // Fetch user data to set default chapter and isAdmin
+    const { chapter, isAdmin } = this.customhelperService.getChapterAndIsAdmin();
+    this.isAdmin = isAdmin;
+
+    // Set default chapter if user has one
+    if (chapter) {
+      this.payload.chapter = chapter;
+      this.selectedChapter = chapter;
+    }
+
     this.fetchChapters();
     this.fetchUsers();
   }
@@ -160,33 +170,32 @@ export class UsersComponent implements OnInit, AfterViewInit {
         this.editUserModal = new bootstrap.Modal(editModalElement);
       } else {
         console.warn('Edit user modal element not found in the DOM');
-      
-  }
+      }
       const notificationModalElement = document.getElementById('notificationModal');
       if (notificationModalElement) {
         this.notificationModal = new bootstrap.Modal(notificationModalElement);
       } else {
         console.warn('Notification modal element not found in the DOM');
       }
+      const emailModalElement = document.getElementById('emailModal');
+      if (emailModalElement) {
+        this.emailModal = new bootstrap.Modal(emailModalElement);
+      }
+      const whatsappModalElement = document.getElementById('whatsappModal');
+      if (whatsappModalElement) {
+        this.whatsappModal = new bootstrap.Modal(whatsappModalElement);
+      }
     }, 300);
-
-    const emailModalElement = document.getElementById('emailModal');
-    if (emailModalElement) {
-      this.emailModal = new bootstrap.Modal(emailModalElement);
-    }
-
-    const whatsappModalElement = document.getElementById('whatsappModal');
-    if (whatsappModalElement) {
-      this.whatsappModal = new bootstrap.Modal(whatsappModalElement);
-    }
-
-
   }
 
   async fetchChapters(): Promise<void> {
     try {
       const chapters = await this.chapterService.getAllChaptersForDropdown();
       this.chapters = chapters;
+      // If not admin, filter chapters to only show user's chapter
+      if (!this.isAdmin && this.payload.chapter) {
+        this.chapters = this.chapters.filter(ch => ch.name === this.payload.chapter);
+      }
       this.cdr.detectChanges();
     } catch (error) {
       console.error('Error fetching chapters:', error);
@@ -348,8 +357,8 @@ export class UsersComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // Email Modal Methods
   openEmailModal(user: any): void {
+    if (!this.isAdmin) return; // Non-admin cannot access
     this.selectedUser = user;
     this.emailForm = {
       userId: user._id,
@@ -399,14 +408,9 @@ export class UsersComponent implements OnInit, AfterViewInit {
 
     this.emailLoading = true;
     try {
-      // Add your email API call here
       console.log('Sending email to:', this.selectedUser.email);
       console.log('Email data:', this.emailForm);
-
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Show success message
       console.log('Email sent successfully');
       this.closeEmailModal();
     } catch (error) {
@@ -424,8 +428,8 @@ export class UsersComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // WhatsApp Modal Methods
   openWhatsAppModal(user: any): void {
+    if (!this.isAdmin) return; // Non-admin cannot access
     this.selectedUser = user;
     this.whatsappForm = {
       userId: user._id,
@@ -470,14 +474,9 @@ export class UsersComponent implements OnInit, AfterViewInit {
 
     this.whatsappLoading = true;
     try {
-      // Add your WhatsApp API call here
       console.log('Sending WhatsApp to:', this.selectedUser.mobile_number);
       console.log('WhatsApp data:', this.whatsappForm);
-
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Show success message
       console.log('WhatsApp sent successfully');
       this.closeWhatsAppModal();
     } catch (error) {
@@ -488,8 +487,8 @@ export class UsersComponent implements OnInit, AfterViewInit {
     }
   }
 
-
   openNotificationModal(user: any): void {
+    if (!this.isAdmin) return; // Non-admin cannot access
     this.selectedUser = user;
     this.notificationForm = {
       userId: user._id,
@@ -567,13 +566,14 @@ export class UsersComponent implements OnInit, AfterViewInit {
   }
 
   editUser(user: any): void {
+    if (!this.isAdmin) return; // Non-admin cannot access
     this.selectedUser = user;
     this.editForm = {
       name: user.name || '',
       mobile_number: user.mobile_number || '',
       email: user.email || '',
       meeting_role: user.meeting_role || '',
-      role: user.role || 'Member' // Initialize with current role or default
+      role: user.role || 'Member'
     };
     this.editError = { name: '', mobile_number: '', email: '', meeting_role: '', role: '' };
 
@@ -637,6 +637,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
 
     return isValid;
   }
+
   async updateUser(): Promise<void> {
     if (!this.validateEditForm()) {
       return;
@@ -648,7 +649,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
       if (response.success) {
         swalHelper.showToast('User updated successfully', 'success');
         this.closeEditModal();
-        this.fetchUsers(); // Refresh user list
+        this.fetchUsers();
       } else {
         swalHelper.showToast(response.message || 'Failed to update user', 'error');
       }
@@ -661,7 +662,6 @@ export class UsersComponent implements OnInit, AfterViewInit {
     }
   }
 
-
   closeModal(): void {
     if (this.userDetailsModal) {
       this.userDetailsModal.hide();
@@ -670,13 +670,13 @@ export class UsersComponent implements OnInit, AfterViewInit {
     }
   }
 
-
   async toggleUserStatus(user: any): Promise<void> {
+    if (!this.isAdmin) return; // Non-admin cannot access
     try {
       this.loading = true;
       const response = await this.authService.toggleUserStatus({ id: user._id });
       if (response && response.success) {
-        user.isActive = response.data; // Update the local user object
+        user.isActive = response.data;
         swalHelper.showToast(`User status changed to ${response.data ? 'Active' : 'Inactive'}`, 'success');
       } else {
         const errorMessage = response?.message || 'Failed to update user status';
@@ -693,6 +693,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
   }
 
   async deleteUser(userId: string): Promise<void> {
+    if (!this.isAdmin) return; // Non-admin cannot access
     try {
       const result = await swalHelper.confirmation(
         'Delete User',
@@ -735,9 +736,6 @@ export class UsersComponent implements OnInit, AfterViewInit {
       }
 
       const pdfUrl = `${this.pathurl}/admin/${userId}/pdf`;
-      console.log('PDF URL:', pdfUrl);
-      
-      // Create a temporary anchor element to trigger the download
       const link = document.createElement('a');
       link.href = pdfUrl;
       link.download = `${this.selectedUser.name || 'user'}_profile.pdf`;
@@ -785,13 +783,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
           pdf.text(`Chapter: "${currentChapter}"`, margin, margin + 30);
         }
 
-        interface TableColumn {
-          header: string;
-          dataKey: string;
-          width: number;
-        }
-
-        const columns: TableColumn[] = [
+        const columns = [
           { header: 'Name', dataKey: 'name', width: 0.25 },
           { header: 'Business', dataKey: 'business', width: 0.25 },
           { header: 'Mobile', dataKey: 'mobile', width: 0.15 },
@@ -854,16 +846,7 @@ export class UsersComponent implements OnInit, AfterViewInit {
             pdf.rect(margin, yPos, tableWidth, rowHeight, 'F');
           }
 
-          interface UserData {
-            name: string;
-            business: string;
-            mobile: string;
-            email: string;
-            role: string;
-            [key: string]: string;
-          }
-
-          const userData: UserData = {
+          const userData = {
             name: user.name || 'Unknown User',
             business: user.business && user.business.length > 0 ? user.business[0].business_name : 'N/A',
             mobile: user.mobile_number || 'N/A',
@@ -874,7 +857,8 @@ export class UsersComponent implements OnInit, AfterViewInit {
           xPos = margin;
           columns.forEach(column => {
             const colWidth = tableWidth * column.width;
-            let text = userData[column.dataKey] || '';
+            // let text = userData[column.dataKey] || '';
+            let text = (userData as any)[column.dataKey] || '';
             if (text.length > 25) {
               text = text.substring(0, 22) + '...';
             }

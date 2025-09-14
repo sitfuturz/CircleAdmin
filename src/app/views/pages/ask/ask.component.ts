@@ -7,12 +7,13 @@ import { AuthService, ChapterService, Chapter, Ask, AskResponse } from '../../..
 import { ExportService } from '../../../services/export.service';
 import { debounceTime, Subject } from 'rxjs';
 import { swalHelper } from '../../../core/constants/swal-helper';
+import { CustomhelperService } from 'src/app/services/customhelper.service';
 
 @Component({
   selector: 'app-ask-management',
   standalone: true,
   imports: [CommonModule, FormsModule, NgxPaginationModule, NgSelectModule],
-  providers: [AuthService, ChapterService, ExportService],
+  providers: [AuthService, ChapterService, ExportService, CustomhelperService],
   templateUrl: './ask.component.html',
   styleUrls: ['./ask.component.css']
 })
@@ -35,6 +36,8 @@ export class AskManagementComponent implements OnInit {
   chaptersLoading: boolean = false;
   private filterSubject = new Subject<void>();
   Math = Math;
+  isAdmin: boolean = false; // Track if user is admin
+  userChapter: string = ''; // Store user's chapter
 
   filters = {
     page: 1,
@@ -51,6 +54,7 @@ export class AskManagementComponent implements OnInit {
     private authService: AuthService,
     private chapterService: ChapterService,
     private exportService: ExportService,
+    private customhelperService: CustomhelperService, // Inject CustomhelperService
     private cdr: ChangeDetectorRef
   ) {
     this.filterSubject.pipe(debounceTime(300)).subscribe(() => {
@@ -59,6 +63,16 @@ export class AskManagementComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Fetch user data to set default chapter and isAdmin
+    const { chapter, isAdmin } = this.customhelperService.getChapterAndIsAdmin();
+    this.userChapter = chapter;
+    this.isAdmin = isAdmin;
+
+    // Set default chapter in filters if user has a chapter
+    if (this.userChapter) {
+      this.filters.chapter_name = this.userChapter;
+    }
+
     this.fetchChapters();
     this.fetchAsks();
   }
@@ -72,6 +86,10 @@ export class AskManagementComponent implements OnInit {
         search: ''
       });
       this.chapters = response.docs || [];
+      // If not admin, filter chapters to only show user's chapter
+      if (!this.isAdmin && this.userChapter) {
+        this.chapters = this.chapters.filter(chapter => chapter.name === this.userChapter);
+      }
     } catch (error) {
       console.error('Error fetching chapters:', error);
       swalHelper.showToast('Failed to fetch chapters', 'error');
@@ -210,7 +228,7 @@ export class AskManagementComponent implements OnInit {
       page: 1,
       limit: 10,
       search: '',
-      chapter_name: null
+      chapter_name: this.userChapter || null // Reset to user's chapter
     };
     this.fetchAsks();
   }

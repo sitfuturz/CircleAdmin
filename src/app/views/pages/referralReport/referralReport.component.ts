@@ -8,12 +8,13 @@ import { debounceTime, Subject } from 'rxjs';
 import { NgxPaginationModule } from 'ngx-pagination';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ExportService } from '../../../services/export.service';
+import { CustomhelperService } from 'src/app/services/customhelper.service';
 
 @Component({
   selector: 'app-referrals',
   standalone: true,
   imports: [CommonModule, FormsModule, NgxPaginationModule, NgSelectModule],
-  providers: [ReferralService, ChapterService, ExportService],
+  providers: [ReferralService, ChapterService, ExportService, CustomhelperService],
   templateUrl: './referralReport.component.html',
   styleUrls: ['./referralReport.component.css'],
 })
@@ -35,13 +36,15 @@ export class ReferralsComponent implements OnInit {
   loading: boolean = false;
   chaptersLoading: boolean = false;
   exporting: boolean = false;
+  isAdmin: boolean = false; // New property to track if user is admin
+  userChapter: string = ''; // New property to store user's chapter
 
   Math = Math;
 
   filters = {
     page: 1,
     limit: 10,
-    chapterName: null,
+    chapterName: null as string | null,
     startDate: this.formatDateForInput(new Date(new Date().setDate(new Date().getDate() - 30))),
     endDate: this.formatDateForInput(new Date())
   };
@@ -56,6 +59,7 @@ export class ReferralsComponent implements OnInit {
     private referralService: ReferralService,
     private chapterService: ChapterService,
     private exportService: ExportService,
+    private customhelperService: CustomhelperService, // Inject CustomhelperService
     private cdr: ChangeDetectorRef
   ) {
     this.filterSubject.pipe(debounceTime(300)).subscribe(() => {
@@ -64,6 +68,16 @@ export class ReferralsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Fetch user data to set default chapter and isAdmin
+    const { chapter, isAdmin } = this.customhelperService.getChapterAndIsAdmin();
+    this.userChapter = chapter;
+    this.isAdmin = isAdmin;
+
+    // Set default chapter in filters if user has a chapter
+    if (this.userChapter) {
+      this.filters.chapterName = this.userChapter;
+    }
+
     this.fetchChapters();
     this.fetchReferrals();
   }
@@ -111,7 +125,11 @@ export class ReferralsComponent implements OnInit {
         limit: 1000,
         search: ''
       });
-      this.chapters = response.docs|| [];
+      this.chapters = response.docs || [];
+      // If not admin, filter chapters to only show user's chapter
+      if (!this.isAdmin && this.userChapter) {
+        this.chapters = this.chapters.filter(chapter => chapter.name === this.userChapter);
+      }
     } catch (error) {
       console.error('Error fetching chapters:', error);
       swalHelper.showToast('Failed to fetch chapters', 'error');
@@ -134,7 +152,7 @@ export class ReferralsComponent implements OnInit {
     this.filters = {
       page: 1,
       limit: 10,
-      chapterName: null,
+      chapterName: this.userChapter || null, // Reset to user's chapter
       startDate: this.formatDateForInput(new Date(new Date().setDate(new Date().getDate() - 30))),
       endDate: this.formatDateForInput(new Date())
     };
@@ -148,7 +166,6 @@ export class ReferralsComponent implements OnInit {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-    
     });
   }
 
